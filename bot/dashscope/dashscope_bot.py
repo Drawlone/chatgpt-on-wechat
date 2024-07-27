@@ -10,6 +10,7 @@ from .dashscope_session import DashscopeSession
 import os
 import dashscope
 from http import HTTPStatus
+from dashscope import Application
 
 
 
@@ -17,7 +18,7 @@ dashscope_models = {
     "qwen-turbo": dashscope.Generation.Models.qwen_turbo,
     "qwen-plus": dashscope.Generation.Models.qwen_plus,
     "qwen-max": dashscope.Generation.Models.qwen_max,
-    "qwen-bailian-v1": dashscope.Generation.Models.bailian_v1
+    "qwen-bailian-v1": dashscope.Generation.Models.bailian_v1,
 }
 # ZhipuAI对话模型API
 class DashscopeBot(Bot):
@@ -27,7 +28,11 @@ class DashscopeBot(Bot):
         self.model_name = conf().get("model") or "qwen-plus"
         self.api_key = conf().get("dashscope_api_key")
         os.environ["DASHSCOPE_API_KEY"] = self.api_key
-        self.client = dashscope.Generation
+        if self.model_name == "qwen-bailian":
+            self.client = dashscope.Application
+            self.app_id = conf().get("qwen_app_id")
+        else:
+            self.client = dashscope.Generation
 
     def reply(self, query, context=None):
         # acquire reply content
@@ -81,18 +86,31 @@ class DashscopeBot(Bot):
         :param retry_count: retry count
         :return: {}
         """
-        try:
-            dashscope.api_key = self.api_key
-            response = self.client.call(
-                dashscope_models[self.model_name],
-                messages=session.messages,
-                result_format="message"
-            )
+        try: 
+            if self.model_name == "qwen-bailian":
+                response = self.client.call(
+                    app_id=self.app_id,
+                    prompt=session.messages
+                )
+            else:
+                dashscope.api_key = self.api_key
+                response = self.client.call(
+                    dashscope_models[self.model_name],
+                    messages=session.messages,
+                    result_format="message"
+                )
             if response.status_code == HTTPStatus.OK:
-                content = response.output.choices[0]["message"]["content"]
+                if self.model_name == "qwen-bailian":
+                    content = response.output.choices[0]["message"]["content"]
+                    completion_tokens = response.usage["output_tokens"]
+                    total_tokens = response.usage["total_tokens"]
+                else:
+                    content = response.choices[0].output.text
+                    completion_tokens = sum(response.usage.output_tokens)
+                    total_tokens = sum(response.usage.input_tokens) + sum(response.usage.output_tokens)
                 return {
-                    "total_tokens": response.usage["total_tokens"],
-                    "completion_tokens": response.usage["output_tokens"],
+                    "total_tokens": total_tokens,
+                    "completion_tokens": completion_tokens,
                     "content": content,
                 }
             else:

@@ -47,6 +47,7 @@ WEN_XIN_4 = "wenxin-4"
 QWEN_TURBO = "qwen-turbo"
 QWEN_PLUS = "qwen-plus"
 QWEN_MAX = "qwen-max"
+QWEN_BAILIAN = "qwen-bailian"
 
 LINKAI_35 = "linkai-3.5"
 LINKAI_4_TURBO = "linkai-4-turbo"
