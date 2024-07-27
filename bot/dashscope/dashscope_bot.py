@@ -90,7 +90,8 @@ class DashscopeBot(Bot):
             if self.model_name == "qwen-bailian":
                 response = self.client.call(
                     app_id=self.app_id,
-                    prompt=session.messages
+                    prompt=session.messages,
+                    api_key=self.api_key
                 )
             else:
                 dashscope.api_key = self.api_key
@@ -101,13 +102,16 @@ class DashscopeBot(Bot):
                 )
             if response.status_code == HTTPStatus.OK:
                 if self.model_name == "qwen-bailian":
+                    content = response.output.text
+                    output_tokens = sum(model['output_tokens'] for model in response.usage.models)
+                    input_tokens = sum(model['input_tokens'] for model in response.usage.models)
+                    total_tokens = output_tokens + input_tokens
+                    completion_tokens = output_tokens
+                else:
                     content = response.output.choices[0]["message"]["content"]
                     completion_tokens = response.usage["output_tokens"]
                     total_tokens = response.usage["total_tokens"]
-                else:
-                    content = response.choices[0].output.text
-                    completion_tokens = sum(response.usage.output_tokens)
-                    total_tokens = sum(response.usage.input_tokens) + sum(response.usage.output_tokens)
+                    
                 return {
                     "total_tokens": total_tokens,
                     "completion_tokens": completion_tokens,
