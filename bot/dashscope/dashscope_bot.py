@@ -11,6 +11,7 @@ import os
 import dashscope
 from http import HTTPStatus
 from dashscope import Application
+import time
 
 
 
@@ -57,6 +58,7 @@ class DashscopeBot(Bot):
             logger.debug("[DASHSCOPE] session query={}".format(session.messages))
 
             reply_content = self.reply_text(session)
+            time.sleep(len(reply_content.content)/3)
             logger.debug(
                 "[DASHSCOPE] new_query={}, session_id={}, reply_cont={}, completion_tokens={}".format(
                     session.messages,
